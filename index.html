@@ -34,8 +34,13 @@ if(vk){vk.send('VKWebAppInit').then(()=>{inVK=true}).catch(()=>{});
 const best=()=>+(localStorage.getItem('uv_best')||0);
 let revived=0,wins=0;
 function mute(m){if(master)master.gain.value=m?0:.5;if(sfxG)sfxG.gain.value=m?0:volS;}
-function showAd(fmt){if(!vk||!inVK)return Promise.resolve(fmt!=='reward');mute(1);
- return vk.send('VKWebAppShowNativeAds',{ad_format:fmt}).then(d=>{mute(0);return !!d.result}).catch(()=>{mute(0);return false});}
+function toast(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:#333;color:#fff;padding:12px 20px;border-radius:10px;font-size:18px;z-index:20';document.body.appendChild(d);setTimeout(()=>d.remove(),2500)}
+function showAd(fmt){const inv2=inVK||!!new URLSearchParams(location.search).get('vk_app_id');
+ if(!vk||!inv2){if(fmt==='reward')toast('Реклама работает только в ВКонтакте');return Promise.resolve(fmt!=='reward');}
+ mute(1);
+ return vk.send('VKWebAppCheckNativeAds',{ad_format:fmt}).then(c=>{if(c&&c.result===false)throw 0;return vk.send('VKWebAppShowNativeAds',{ad_format:fmt})})
+ .then(d=>{mute(0);if(!d.result&&fmt==='reward')toast('Досмотри рекламу до конца');return !!d.result})
+ .catch(()=>{mute(0);if(fmt==='reward')toast('Реклама сейчас недоступна, попробуй позже');return false});}
 const TN=['Рассвет','Тихая вода','Облака','Лесная тропа','Светлячки','Луна','Бриз','Капли','Звёздный сад','Закат','Туман','Снегопад','Морская гладь','Шёпот листьев','Полночь','Северное сияние','Озеро','Тёплый дождь','Пух','Мечта','Горный ручей','Ночной сад','Лаванда','Колыбельная','Тихий космос','Утро','Песок','Дымка','Сумерки','Покой'];
 let selTrack=+(localStorage.getItem('uv_tr2')??-1);
 function pickTrack(i){selTrack=i;try{localStorage.setItem('uv_tr2',i)}catch(e){}if(!musicOn)toggleMusic();else playMusic(i<0?(level||1)-1:i);drawTracks();}
